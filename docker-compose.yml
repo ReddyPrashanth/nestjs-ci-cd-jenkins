@@ -1,0 +1,19 @@
+version: '3.3'
+
+services: 
+    app:
+        container_name: nestjs-api
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        ports: 
+            - 3000:3000
+            - 9229:9229
+        networks: 
+            - nestjs-network
+        command: npm run start:dev
+        volumes: 
+            - .:/user/src/app
+            - /usr/src/app/node_modules
+networks: 
+    nestjs-network:
