@@ -1,7 +1,11 @@
 node('slave1') {
-  def imageTag = 'psreepathi/nestjs-image:1.0.0'
+  def imageTag = 'psreepathi/nestjs-image:1.0.1'
+  def commit_id
   stage('scm') {
     git 'https://github.com/ReddyPrashanth/nestjs-ci-cd-jenkins.git'
+    sh "git rev-parse --short HEAD > .git/commit-id"
+    commit_id = readFile('.git/commit-id').trim()
+    echo "commit id: ${commit_id}"
   }
 
   stage('Build Docker Image') {
@@ -18,7 +22,7 @@ node('slave1') {
   stage('Remove Old Containers') {
     sshagent(['jenkins-ssh']) {
       try{
-        def sshCmd = 'ssh -o StrictHostKeyChecking=no jenkins@18.189.180.227'
+        def sshCmd = 'ssh -o StrictHostKeyChecking=no ubuntu@18.191.139.173'
         def dockerRm = 'docker rm -f nest-app'
         sh "${sshCmd} ${dockerRm}"
       }catch(error) {
@@ -30,7 +34,7 @@ node('slave1') {
   stage('Deploying to Dev') {
     sshagent(['jenkins-ssh']) {
         input 'Deploy to Dev?'
-        def sshCmd = 'ssh -o StrictHostKeyChecking=no jenkins@18.189.180.227'
+        def sshCmd = 'ssh -o StrictHostKeyChecking=no ubuntu@18.191.139.173'
         def dockerRm = "docker run -d -p 3000:3000 --name nest-app ${imageTag}"
         sh "${sshCmd} ${dockerRm}"
     }
