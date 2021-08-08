@@ -18,7 +18,7 @@ node('slave1') {
       sh 'docker login -u $username -p $password'
     }
     sh "docker push ${imageTag}"
-    sh "docker rmi ${imageTag}"
+    sh "docker logout && docker rmi ${imageTag}"
   }
 
   stage('Remove Old Containers') {
