@@ -1,21 +1,38 @@
-node {
-   def commit_id
-   stage('Preparation') {
-     checkout scm
-     sh "git rev-parse --short HEAD > .git/commit-id"
-     commit_id = readFile('.git/commit-id').trim()
-   }
-   stage('test') {
-     def myTestContainer = docker.image('node:14.17.4-alpine3.14')
-     myTestContainer.pull()
-     myTestContainer.inside {
-       sh 'npm install --only=dev'
-       sh 'npm test'
-     }
-   }                           
-   stage('docker build/push') {            
-     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-       def app = docker.build("psreepathi/nestjs-image:${commit_id}", '.').push()
-     }                                     
-   }                                       
-}   
+node('slave1') {
+  def imageTag = 'psreepathi/nestjs-image:1.0.0'
+  stage('scm') {
+    git 'https://github.com/ReddyPrashanth/nestjs-ci-cd-jenkins.git'
+  }
+
+  stage('Build Docker Image') {
+    sh "docker build -t ${imageTag} ."
+  }
+
+  stage('Push Image to DockerHub') {
+    withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'password', usernameVariable: 'username')]) {
+      sh 'docker login -u $username -p $password'
+    }
+    sh "docker push ${imageTag}"
+  }
+
+  stage('Remove Old Containers') {
+    sshagent(['jenkins-ssh']) {
+      try{
+        def sshCmd = 'ssh -o StrictHostKeyChecking=no ubuntu@18.191.139.173'
+        def dockerRm = 'docker rm -f nest-app'
+        sh "${sshCmd} ${dockerRm}"
+      }catch(error) {
+        echo 'Image nest-app not found.'
+      }
+    }
+  }
+
+  stage('Deploying to Dev') {
+    sshagent(['jenkins-ssh']) {
+        input 'Deploy to Dev?'
+        def sshCmd = 'ssh -o StrictHostKeyChecking=no ubuntu@18.191.139.173'
+        def dockerRm = "docker run -d -p 3000:3000 --name nest-app ${imageTag}"
+        sh "${sshCmd} ${dockerRm}"
+    }
+  }
+} 
