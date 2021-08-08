@@ -1,11 +1,12 @@
 node('slave1') {
-  def imageTag = 'psreepathi/nestjs-image:1.0.1'
+  def imageTag
   def commit_id
   stage('scm') {
     git 'https://github.com/ReddyPrashanth/nestjs-ci-cd-jenkins.git'
     sh "git rev-parse --short HEAD > .git/commit-id"
     commit_id = readFile('.git/commit-id').trim()
-    echo "commit id: ${commit_id}"
+    sh 'echo "commit id: ${commit_id}"'
+    imageTag = "psreepathi/nestjs-image:${commit_id}"
   }
 
   stage('Build Docker Image') {
@@ -17,6 +18,7 @@ node('slave1') {
       sh 'docker login -u $username -p $password'
     }
     sh "docker push ${imageTag}"
+    sh "docker rmi ${imageTag}"
   }
 
   stage('Remove Old Containers') {
