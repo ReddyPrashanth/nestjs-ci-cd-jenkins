@@ -18,7 +18,7 @@ node('slave1') {
   stage('Remove Old Containers') {
     sshagent(['jenkins-ssh']) {
       try{
-        def sshCmd = 'ssh -o StrictHostKeyChecking=no ubuntu@18.191.139.173'
+        def sshCmd = 'ssh -o StrictHostKeyChecking=no jenkins@18.191.139.173'
         def dockerRm = 'docker rm -f nest-app'
         sh "${sshCmd} ${dockerRm}"
       }catch(error) {
@@ -30,7 +30,7 @@ node('slave1') {
   stage('Deploying to Dev') {
     sshagent(['jenkins-ssh']) {
         input 'Deploy to Dev?'
-        def sshCmd = 'ssh -o StrictHostKeyChecking=no ubuntu@18.191.139.173'
+        def sshCmd = 'ssh -o StrictHostKeyChecking=no jenkins@18.191.139.173'
         def dockerRm = "docker run -d -p 3000:3000 --name nest-app ${imageTag}"
         sh "${sshCmd} ${dockerRm}"
     }
